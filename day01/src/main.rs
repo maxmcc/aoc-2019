@@ -40,8 +40,6 @@ fn fuel_for_module(module_mass: isize) -> isize {
     total
 }
 
-
-
 #[cfg(test)]
 mod test {
     use super::*;

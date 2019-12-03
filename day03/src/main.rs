@@ -35,12 +35,11 @@ fn part2(input: &str) {
             Some(second_distance) => {
                 let total_distance = first_distance + second_distance;
                 shortest = shortest.min(total_distance);
-            },
+            }
         }
     }
     println!("{}", shortest);
 }
-
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Point {
@@ -62,14 +61,25 @@ fn visited_points(string: &str) -> HashMap<Point, usize> {
     for step in steps {
         distance += 1;
         position = match step {
-            'L' => Point { x: position.x - 1, ..position },
-            'R' => Point { x: position.x + 1, ..position },
-            'U' => Point { y: position.y + 1, ..position },
-            'D' => Point { y: position.y - 1, ..position },
+            'L' => Point {
+                x: position.x - 1,
+                y: position.y,
+            },
+            'R' => Point {
+                x: position.x + 1,
+                y: position.y,
+            },
+            'U' => Point {
+                x: position.x,
+                y: position.y + 1,
+            },
+            'D' => Point {
+                x: position.x,
+                y: position.y - 1,
+            },
             _ => unreachable!(),
         };
         points.insert(position, distance);
     }
     points
 }
-
