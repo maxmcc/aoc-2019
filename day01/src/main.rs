@@ -1,13 +1,28 @@
 use std::io::{self, Read};
 
-type Result<T> = ::std::result::Result<T, Box<dyn ::std::error::Error>>;
-
-fn main() -> Result<()> {
+fn main() {
     let mut input = String::new();
-    io::stdin().read_to_string(&mut input)?;
-    part1(&input)?;
-    part2(&input)?;
-    Ok(())
+    io::stdin().read_to_string(&mut input).unwrap();
+    part1(&input);
+    part2(&input);
+}
+
+fn part1(input: &str) {
+    let mut sum = 0;
+    for line in input.lines() {
+        let mass = line.parse().unwrap();
+        sum += fuel_for_mass(mass);
+    }
+    println!("{}", sum);
+}
+
+fn part2(input: &str) {
+    let mut sum = 0;
+    for line in input.lines() {
+        let mass = line.parse().unwrap();
+        sum += fuel_for_module(mass);
+    }
+    println!("{}", sum);
 }
 
 fn fuel_for_mass(mass: isize) -> isize {
@@ -18,32 +33,13 @@ fn fuel_for_module(module_mass: isize) -> isize {
     let mut remaining = module_mass;
     let mut total = 0;
     while remaining > 2 {
-        let fuel = std::cmp::max(0, fuel_for_mass(remaining));
+        let fuel = fuel_for_mass(remaining).max(0);
         total += fuel;
         remaining = fuel;
     }
     total
 }
 
-fn part1(input: &str) -> Result<()> {
-    let mut sum = 0;
-    for line in input.lines() {
-        let mass = line.parse()?;
-        sum += fuel_for_mass(mass);
-    }
-    println!("{}", sum);
-    Ok(())
-}
-
-fn part2(input: &str) -> Result<()> {
-    let mut sum = 0;
-    for line in input.lines() {
-        let mass = line.parse()?;
-        sum += fuel_for_module(mass);
-    }
-    println!("{}", sum);
-    Ok(())
-}
 
 
 #[cfg(test)]
