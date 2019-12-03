@@ -47,6 +47,12 @@ struct Point {
     y: isize,
 }
 
+impl Point {
+    fn new(x: isize, y: isize) -> Self {
+        Point { x, y }
+    }
+}
+
 fn visited_points(string: &str) -> HashMap<Point, usize> {
     let steps = string.split(',').flat_map(|segment| {
         let direction = segment.chars().next().unwrap();
@@ -55,28 +61,16 @@ fn visited_points(string: &str) -> HashMap<Point, usize> {
     });
 
     let mut points = HashMap::new();
-    let mut position = Point { x: 0, y: 0 };
+    let mut position = Point::new(0, 0);
     let mut distance = 0;
 
     for step in steps {
         distance += 1;
         position = match step {
-            'L' => Point {
-                x: position.x - 1,
-                y: position.y,
-            },
-            'R' => Point {
-                x: position.x + 1,
-                y: position.y,
-            },
-            'U' => Point {
-                x: position.x,
-                y: position.y + 1,
-            },
-            'D' => Point {
-                x: position.x,
-                y: position.y - 1,
-            },
+            'L' => Point::new(position.x - 1, position.y),
+            'R' => Point::new(position.x + 1, position.y),
+            'U' => Point::new(position.x, position.y + 1),
+            'D' => Point::new(position.x, position.y - 1),
             _ => unreachable!(),
         };
         points.insert(position, distance);
