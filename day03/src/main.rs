@@ -75,5 +75,6 @@ fn visited_points(string: &str) -> HashMap<Point, usize> {
         };
         points.insert(position, distance);
     }
+    points.remove(&Point::new(0, 0));
     points
 }
