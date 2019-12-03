@@ -1,52 +1,46 @@
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
 use std::io::{self, Read};
+use std::iter;
 
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
-
-fn main() -> Result<()> {
+fn main() {
     let mut input = String::new();
-    io::stdin().read_to_string(&mut input)?;
-    part1(&input)?;
-    part2(&input)?;
-    Ok(())
+    io::stdin().read_to_string(&mut input).unwrap();
+    part1(&input);
+    part2(&input);
 }
 
-fn part1(input: &str) -> Result<()> {
+fn part1(input: &str) {
     let mut lines = input.lines();
+    let first = visited_points(lines.next().unwrap());
+    let second = visited_points(lines.next().unwrap());
 
-    let first_points = points(lines.next().unwrap());
-    let second_points = points(lines.next().unwrap());
+    let first_points = first.keys().collect::<HashSet<_>>();
+    let second_points = second.keys().collect();
 
-    let first: HashSet<_> = first_points.keys().collect();
-    let second: HashSet<_> = second_points.keys().collect();
-
-    let intersections = first.intersection(&second);
-    let nearest = intersections.map(|p| p.x.abs() + p.y.abs()).min();
-    println!("{:?}", nearest);
-
-    Ok(())
+    let intersections = first_points.intersection(&second_points);
+    let nearest = intersections.map(|p| p.x.abs() + p.y.abs()).min().unwrap();
+    println!("{}", nearest);
 }
 
-fn part2(input: &str) -> Result<()> {
+fn part2(input: &str) {
     let mut lines = input.lines();
 
-    let first_points = points(lines.next().unwrap());
-    let second_points = points(lines.next().unwrap());
+    let first = visited_points(lines.next().unwrap());
+    let second = visited_points(lines.next().unwrap());
 
-    let mut shortest: Option<usize> = None;
-    for (key, d1) in &first_points {
-        if let Some(d2) = second_points.get(key) {
-            if let Some(s) = shortest {
-                shortest = Some(s.min(d1 + d2));
-            } else {
-                shortest = Some(d1 + d2);
-            }
+    let mut shortest = std::usize::MAX;
+    for (point, first_distance) in first {
+        match second.get(&point) {
+            None => continue,
+            Some(second_distance) => {
+                let total_distance = first_distance + second_distance;
+                shortest = shortest.min(total_distance);
+            },
         }
     }
-    println!("{:?}", shortest);
-    Ok(())
+    println!("{}", shortest);
 }
+
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Point {
@@ -54,70 +48,28 @@ struct Point {
     y: isize,
 }
 
-impl Point {
-    fn new(x: isize, y: isize) -> Self {
-        Point { x, y }
-    }
-}
+fn visited_points(string: &str) -> HashMap<Point, usize> {
+    let steps = string.split(',').flat_map(|segment| {
+        let direction = segment.chars().next().unwrap();
+        let distance = segment[1..].parse::<usize>().unwrap();
+        iter::repeat(direction).take(distance)
+    });
 
-
-fn points(string: &str) -> HashMap<Point, usize> {
     let mut points = HashMap::new();
-    let mut travelled = 0;
-    let mut current = Point::new(0, 0);
+    let mut position = Point { x: 0, y: 0 };
+    let mut distance = 0;
 
-    let segments = string.split(',').map(Segment::from_str);
-    for segment in segments {
-        match segment {
-            Segment::Up(distance) =>
-                for _ in 0..distance {
-                    travelled += 1;
-                    current = Point::new(current.x, current.y + 1);
-                    points.insert(current, travelled);
-                },
-            Segment::Down(distance) =>
-                for _ in 0..distance {
-                    travelled += 1;
-                    current = Point::new(current.x, current.y - 1);
-                    points.insert(current, travelled);
-                },
-            Segment::Left(distance) =>
-                for _ in 0..distance {
-                    travelled += 1;
-                    current = Point::new(current.x - 1, current.y);
-                    points.insert(current, travelled);
-                },
-            Segment::Right(distance) =>
-                for _ in 0..distance {
-                    travelled += 1;
-                    current = Point::new(current.x + 1, current.y);
-                    points.insert(current, travelled);
-                },
-        }
+    for step in steps {
+        distance += 1;
+        position = match step {
+            'L' => Point { x: position.x - 1, ..position },
+            'R' => Point { x: position.x + 1, ..position },
+            'U' => Point { y: position.y + 1, ..position },
+            'D' => Point { y: position.y - 1, ..position },
+            _ => unreachable!(),
+        };
+        points.insert(position, distance);
     }
-    points.remove(&Point::new(0, 0));
     points
 }
-
-#[derive(Clone, Debug)]
-enum Segment {
-    Up(isize),
-    Down(isize),
-    Left(isize),
-    Right(isize),
-}
-
-impl Segment {
-    fn from_str(string: &str) -> Self {
-        let distance = string[1..].parse::<isize>().unwrap();
-        match string.chars().next().unwrap() {
-            'U' => Segment::Up(distance),
-            'D' => Segment::Down(distance),
-            'L' => Segment::Left(distance),
-            'R' => Segment::Right(distance),
-            _ => unreachable!(),
-        }
-    }
-}
-
 
