@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::io::{self, Read};
 use std::iter;
 
@@ -14,31 +15,42 @@ fn part1(input: &str) {
     let first = visited_points(lines.next().unwrap());
     let second = visited_points(lines.next().unwrap());
 
-    let first_points = first.keys().collect::<HashSet<_>>();
-    let second_points = second.keys().collect();
-
-    let intersections = first_points.intersection(&second_points);
-    let nearest = intersections.map(|p| p.x.abs() + p.y.abs()).min().unwrap();
+    let intersections = first.intersection_dedup(&second, |_, _| 0);
+    let nearest = intersections.keys().map(Point::manhattan).min().unwrap();
     println!("{}", nearest);
 }
 
 fn part2(input: &str) {
     let mut lines = input.lines();
-
     let first = visited_points(lines.next().unwrap());
     let second = visited_points(lines.next().unwrap());
+    let intersections = first.intersection_dedup(&second, |x, y| x + y);
+    let shortest = intersections.values().min().unwrap();
+    println!("{}", shortest);
+}
 
-    let mut shortest = std::usize::MAX;
-    for (point, first_distance) in first {
-        match second.get(&point) {
-            None => continue,
-            Some(second_distance) => {
-                let total_distance = first_distance + second_distance;
-                shortest = shortest.min(total_distance);
+trait IntersectionDedup {
+    type Value;
+    fn intersection_dedup<F>(&self, other: &Self, dedup: F) -> Self
+    where
+        F: Fn(&Self::Value, &Self::Value) -> Self::Value;
+}
+
+impl<K: Eq + Hash + Clone, V> IntersectionDedup for HashMap<K, V> {
+    type Value = V;
+    fn intersection_dedup<F>(&self, other: &Self, dedup: F) -> Self
+    where
+        F: Fn(&V, &V) -> V,
+    {
+        let mut intersection = HashMap::new();
+        for (key, first_value) in self {
+            if let Some(second_value) = other.get(key) {
+                let new_value = dedup(first_value, second_value);
+                intersection.insert(key.clone(), new_value);
             }
         }
+        intersection
     }
-    println!("{}", shortest);
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -50,6 +62,10 @@ struct Point {
 impl Point {
     fn new(x: isize, y: isize) -> Self {
         Point { x, y }
+    }
+
+    fn manhattan(&self) -> isize {
+        self.x.abs() + self.y.abs()
     }
 }
 
