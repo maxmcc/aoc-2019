@@ -72,7 +72,7 @@ impl Point {
 fn visited_points(string: &str) -> HashMap<Point, usize> {
     let steps = string.split(',').flat_map(|segment| {
         let direction = segment.chars().next().unwrap();
-        let distance = segment[1..].parse::<usize>().unwrap();
+        let distance = segment[1..].parse().unwrap();
         iter::repeat(direction).take(distance)
     });
 

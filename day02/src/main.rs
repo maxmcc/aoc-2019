@@ -41,10 +41,7 @@ struct Computer {
 
 impl Computer {
     fn from_str(string: &str) -> Self {
-        let memory = string
-            .split(',')
-            .map(|x| x.parse().unwrap())
-            .collect::<Vec<_>>();
+        let memory: Vec<_> = string.split(',').map(|x| x.parse().unwrap()).collect();
         Computer::new(&memory)
     }
 
@@ -63,7 +60,7 @@ impl Computer {
         self.memory[2] = verb;
     }
 
-    fn handle_binary_op<F>(&mut self, lhs: usize, rhs: usize, dst: usize, op: F)
+    fn binary_op<F>(&mut self, lhs: usize, rhs: usize, dst: usize, op: F)
     where
         F: Fn(usize, usize) -> usize,
     {
@@ -74,8 +71,8 @@ impl Computer {
     fn run(&mut self) -> usize {
         loop {
             match self.memory[self.instruction_ptr..] {
-                [1, lhs, rhs, dst, ..] => self.handle_binary_op(lhs, rhs, dst, |x, y| x + y),
-                [2, lhs, rhs, dst, ..] => self.handle_binary_op(lhs, rhs, dst, |x, y| x * y),
+                [1, lhs, rhs, dst, ..] => self.binary_op(lhs, rhs, dst, |x, y| x + y),
+                [2, lhs, rhs, dst, ..] => self.binary_op(lhs, rhs, dst, |x, y| x * y),
                 [99] | [99, ..] => break,
                 _ => panic!("unrecognized opcode"),
             }
