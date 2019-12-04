@@ -89,7 +89,7 @@ fn visited_points(string: &str) -> HashMap<Point, usize> {
             'D' => Point::new(position.x, position.y - 1),
             _ => unreachable!(),
         };
-        points.insert(position, distance);
+        points.entry(position).or_insert(distance);
     }
     points.remove(&Point::new(0, 0));
     points
