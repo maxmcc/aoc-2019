@@ -11,12 +11,14 @@ fn main() {
 
 fn part1(input: &str) {
     let mut computer = Computer::from_str(input);
-    let _ = computer.run(1);
+    let output = computer.run(vec![1]);
+    println!("{:?}", output);
 }
 
 fn part2(input: &str) {
     let mut computer = Computer::from_str(input);
-    let _ = computer.run(5);
+    let output = computer.run(vec![5]);
+    println!("{:?}", output);
 }
 
 #[derive(Clone, Debug)]
@@ -45,7 +47,8 @@ impl Computer {
         }
     }
 
-    fn run(&mut self, input: isize) -> Vec<isize> {
+    fn run(&mut self, input: impl IntoIterator<Item = isize>) -> Vec<isize> {
+        let mut input = input.into_iter();
         let mut output = vec![];
         loop {
             let memory = &self.memory[self.instruction_ptr..];
@@ -71,7 +74,7 @@ impl Computer {
                 }
                 Instruction::Input(dst) => {
                     if let Parameter::PositionMode(d) = dst {
-                        self.memory[d] = input;
+                        self.memory[d] = input.next().unwrap();
                     } else {
                         panic!("found destination in immediate mode");
                     }
@@ -237,99 +240,99 @@ mod test {
     #[test]
     fn test_8_eq_8_position_mode() {
         let mut computer = Computer::new(&[3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]);
-        assert_eq!(computer.run(8), [1]);
+        assert_eq!(computer.run(vec![8]), [1]);
     }
 
     #[test]
     fn test_7_eq_8_position_mode_7() {
         let mut computer = Computer::new(&[3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]);
-        assert_eq!(computer.run(7), [0]);
+        assert_eq!(computer.run(vec![7]), [0]);
     }
 
     #[test]
     fn test_5_lt_8_position_mode() {
         let mut computer = Computer::new(&[3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8]);
-        assert_eq!(computer.run(5), [1]);
+        assert_eq!(computer.run(vec![5]), [1]);
     }
 
     #[test]
     fn test_8_lt_8_position_mode_8() {
         let mut computer = Computer::new(&[3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8]);
-        assert_eq!(computer.run(8), [0]);
+        assert_eq!(computer.run(vec![8]), [0]);
     }
 
     #[test]
     fn test_10_lt_8_position_mode() {
         let mut computer = Computer::new(&[3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8]);
-        assert_eq!(computer.run(10), [0]);
+        assert_eq!(computer.run(vec![10]), [0]);
     }
 
     #[test]
     fn test_8_eq_8_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1108, -1, 8, 3, 4, 3, 99]);
-        assert_eq!(computer.run(8), [1]);
+        assert_eq!(computer.run(vec![8]), [1]);
     }
 
     #[test]
     fn test_7_eq_8_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1108, -1, 8, 3, 4, 3, 99]);
-        assert_eq!(computer.run(7), [0]);
+        assert_eq!(computer.run(vec![7]), [0]);
     }
 
     #[test]
     fn test_5_lt_8_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1107, -1, 8, 3, 4, 3, 99]);
-        assert_eq!(computer.run(5), [1]);
+        assert_eq!(computer.run(vec![5]), [1]);
     }
 
     #[test]
     fn test_8_lt_8_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1107, -1, 8, 3, 4, 3, 99]);
-        assert_eq!(computer.run(8), [0]);
+        assert_eq!(computer.run(vec![8]), [0]);
     }
 
     #[test]
     fn test_12_lt_8_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1107, -1, 8, 3, 4, 3, 99]);
-        assert_eq!(computer.run(12), [0]);
+        assert_eq!(computer.run(vec![12]), [0]);
     }
 
     #[test]
     fn test_nz_0_position_mode() {
         let mut computer =
             Computer::new(&[3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9]);
-        assert_eq!(computer.run(0), [0]);
+        assert_eq!(computer.run(vec![0]), [0]);
     }
 
     #[test]
     fn test_nz_1_position_mode() {
         let mut computer =
             Computer::new(&[3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9]);
-        assert_eq!(computer.run(1), [1]);
+        assert_eq!(computer.run(vec![1]), [1]);
     }
 
     #[test]
     fn test_nz_5_position_mode() {
         let mut computer =
             Computer::new(&[3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9]);
-        assert_eq!(computer.run(5), [1]);
+        assert_eq!(computer.run(vec![5]), [1]);
     }
 
     #[test]
     fn test_nz_0_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
-        assert_eq!(computer.run(0), [0]);
+        assert_eq!(computer.run(vec![0]), [0]);
     }
 
     #[test]
     fn test_nz_1_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
-        assert_eq!(computer.run(1), [1]);
+        assert_eq!(computer.run(vec![1]), [1]);
     }
 
     #[test]
     fn test_nz_39_immediate_mode() {
         let mut computer = Computer::new(&[3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
-        assert_eq!(computer.run(39), [1]);
+        assert_eq!(computer.run(vec![39]), [1]);
     }
 }
