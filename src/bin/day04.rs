@@ -1,5 +1,11 @@
 #![feature(is_sorted)]
 
+extern crate digits_iterator;
+use digits_iterator::*;
+
+extern crate slice_group_by;
+use slice_group_by::GroupBy;
+
 use std::ops::RangeInclusive;
 
 const INPUT_RANGE: RangeInclusive<usize> = 272091..=815432;
@@ -10,96 +16,23 @@ fn main() {
 }
 
 fn part1() {
-    let count = INPUT_RANGE
-        .map(Digits::new)
-        .filter(|digits| {
-            digits.is_sorted()
-                && digits
-                    .collect::<Vec<_>>()
-                    .groups()
-                    .any(|group| group.len() > 1)
-        })
-        .count();
+    let count = INPUT_RANGE.filter(valid_password_1).count();
     println!("{}", count);
 }
 
 fn part2() {
-    let count = INPUT_RANGE
-        .map(Digits::new)
-        .filter(|digits| {
-            digits.is_sorted()
-                && digits
-                    .collect::<Vec<_>>()
-                    .groups()
-                    .any(|group| group.len() == 2)
-        })
-        .count();
+    let count = INPUT_RANGE.filter(valid_password_2).count();
     println!("{}", count);
 }
 
-#[derive(Clone, Copy, Debug)]
-struct Digits {
-    n: usize,
-    divisor: usize,
+fn valid_password_1(password: &usize) -> bool {
+    let digits = password.digits().collect::<Vec<_>>();
+    digits.is_sorted() && digits.linear_group().any(|group| group.len() > 1)
 }
 
-impl Digits {
-    fn new(n: usize) -> Self {
-        let mut divisor = 1;
-        while n >= divisor * 10 {
-            divisor *= 10;
-        }
-        Digits {
-            n: n,
-            divisor: divisor,
-        }
-    }
-}
-
-impl Iterator for Digits {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.divisor == 0 {
-            None
-        } else {
-            let v = self.n / self.divisor;
-            self.n %= self.divisor;
-            self.divisor /= 10;
-            Some(v as u8)
-        }
-    }
-}
-
-struct Groups<'a, T> {
-    base: &'a [T],
-}
-
-impl<'a, T: PartialEq> Iterator for Groups<'a, T> {
-    type Item = &'a [T];
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(item) = self.base.first() {
-            let mut index = 1;
-            while index < self.base.len() && self.base[index] == *item {
-                index += 1;
-            }
-            let (group, rest) = self.base.split_at(index);
-            self.base = rest;
-            Some(group)
-        } else {
-            None
-        }
-    }
-}
-
-trait GroupsImpl<T> {
-    fn groups(&self) -> Groups<T>;
-}
-
-impl<T> GroupsImpl<T> for [T] {
-    fn groups(&self) -> Groups<T> {
-        Groups { base: self }
-    }
+fn valid_password_2(password: &usize) -> bool {
+    let digits = password.digits().collect::<Vec<_>>();
+    digits.is_sorted() && digits.linear_group().any(|group| group.len() == 2)
 }
 
 #[cfg(test)]
@@ -107,14 +40,16 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_groups() {
-        let groups = [1, 1, 1, 1].groups().map(|g| g.to_vec());
-        assert!(groups.eq(vec![vec![1, 1, 1, 1]]));
+    fn test_valid_password_1() {
+        assert!(valid_password_1(&112235));
+        assert!(valid_password_1(&123445));
+        assert!(!valid_password_1(&233424));
+        assert!(!valid_password_1(&123456));
+    }
 
-        let groups = [1, 1, 2, 3, 2, 2].groups().map(|g| g.to_vec());
-        assert!(groups.eq(vec![vec![1, 1], vec![2], vec![3], vec![2, 2]]));
-
-        let groups = [].groups().map(|g: &[i32]| g.to_vec());
-        assert_eq!(groups.count(), 0);
+    #[test]
+    fn test_valid_password_2() {
+        assert!(valid_password_2(&112235));
+        assert!(!valid_password_2(&122235));
     }
 }
