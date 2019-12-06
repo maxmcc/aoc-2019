@@ -1,3 +1,5 @@
+//! A virtual machine for the Intcode instruction set.
+
 #[derive(Clone, Debug)]
 pub struct Computer {
     pub memory: Vec<isize>,
