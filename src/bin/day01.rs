@@ -1,8 +1,5 @@
-use std::io::{self, Read};
-
 fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
+    let input = include_str!("../../input/day01.in");
     part1(&input);
     part2(&input);
 }
