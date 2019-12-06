@@ -1,7 +1,7 @@
 #[derive(Clone, Debug)]
 pub struct Computer {
-    memory: Vec<isize>,
-    instruction_ptr: usize,
+    pub memory: Vec<isize>,
+    pub instruction_ptr: usize,
 }
 
 impl Computer {
@@ -10,7 +10,7 @@ impl Computer {
         Computer::new(&memory)
     }
 
-    fn new(memory: &[isize]) -> Self {
+    pub fn new(memory: &[isize]) -> Self {
         Computer {
             memory: memory.to_vec(),
             instruction_ptr: 0,
@@ -22,6 +22,10 @@ impl Computer {
             Parameter::PositionMode(addr) => self.memory[addr],
             Parameter::ImmediateMode(value) => value,
         }
+    }
+
+    pub fn run_no_io(&mut self) -> Vec<isize> {
+        self.run(vec![])
     }
 
     pub fn run(&mut self, input: impl IntoIterator<Item = isize>) -> Vec<isize> {
@@ -212,6 +216,32 @@ mod test {
                 Parameter::PositionMode(224),
             )
         );
+    }
+
+    #[test]
+    fn test_run_no_io() {
+        let mut computer = Computer::new(&[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]);
+        computer.run_no_io();
+        assert_eq!(
+            computer.memory,
+            &[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+        );
+
+        let mut computer = Computer::new(&[1, 0, 0, 0, 99]);
+        computer.run_no_io();
+        assert_eq!(computer.memory, &[2, 0, 0, 0, 99]);
+
+        let mut computer = Computer::new(&[2, 3, 0, 3, 99]);
+        computer.run_no_io();
+        assert_eq!(computer.memory, &[2, 3, 0, 6, 99]);
+
+        let mut computer = Computer::new(&[2, 4, 4, 5, 99, 0]);
+        computer.run_no_io();
+        assert_eq!(computer.memory, &[2, 4, 4, 5, 99, 9801]);
+
+        let mut computer = Computer::new(&[1, 1, 1, 4, 99, 5, 6, 0, 99]);
+        computer.run_no_io();
+        assert_eq!(computer.memory, &[30, 1, 1, 4, 2, 5, 6, 0, 99]);
     }
 
     #[test]
