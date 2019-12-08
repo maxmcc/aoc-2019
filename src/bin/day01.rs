@@ -1,25 +1,28 @@
 fn main() {
     let input = include_str!("../../input/day01.in");
-    part1(&input);
-    part2(&input);
+    let masses = input
+        .lines()
+        .map(|line| line.parse::<isize>().unwrap())
+        .collect::<Vec<_>>();
+    part1(&masses);
+    part2(&masses);
 }
 
-fn part1(input: &str) {
-    let mut sum = 0;
-    for line in input.lines() {
-        let mass = line.parse().unwrap();
-        sum += fuel_for_mass(mass);
-    }
+fn part1<'a>(masses: impl IntoIterator<Item = &'a isize>) {
+    let sum = sum_masses(masses, fuel_for_mass);
     println!("{}", sum);
 }
 
-fn part2(input: &str) {
-    let mut sum = 0;
-    for line in input.lines() {
-        let mass = line.parse().unwrap();
-        sum += fuel_for_module(mass);
-    }
+fn part2<'a>(masses: impl IntoIterator<Item = &'a isize>) {
+    let sum = sum_masses(masses, fuel_for_module);
     println!("{}", sum);
+}
+
+fn sum_masses<'a>(
+    masses: impl IntoIterator<Item = &'a isize>,
+    f: impl Fn(isize) -> isize,
+) -> isize {
+    masses.into_iter().copied().map(f).sum()
 }
 
 fn fuel_for_mass(mass: isize) -> isize {
@@ -54,5 +57,16 @@ mod test {
         assert_eq!(fuel_for_module(14), 2);
         assert_eq!(fuel_for_module(1969), 966);
         assert_eq!(fuel_for_module(100756), 50346);
+    }
+
+    #[test]
+    fn test_known_answers() {
+        let input = include_str!("../../input/day01.in");
+        let masses = input
+            .lines()
+            .map(|line| line.parse::<isize>().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(sum_masses(&masses, fuel_for_mass), 3262991);
+        assert_eq!(sum_masses(&masses, fuel_for_module), 4891620);
     }
 }
