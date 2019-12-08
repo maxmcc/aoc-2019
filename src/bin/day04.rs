@@ -1,9 +1,6 @@
 #![feature(is_sorted)]
 
-extern crate digits_iterator;
-use digits_iterator::*;
-
-extern crate slice_group_by;
+use radixal::IntoDigits;
 use slice_group_by::GroupBy;
 
 use std::ops::RangeInclusive;
@@ -26,12 +23,12 @@ fn part2() {
 }
 
 fn valid_password_1(password: &usize) -> bool {
-    let digits = password.digits().collect::<Vec<_>>();
+    let digits = password.into_decimal_digits().collect::<Vec<_>>();
     digits.is_sorted() && digits.linear_group().any(|group| group.len() > 1)
 }
 
 fn valid_password_2(password: &usize) -> bool {
-    let digits = password.digits().collect::<Vec<_>>();
+    let digits = password.into_decimal_digits().collect::<Vec<_>>();
     digits.is_sorted() && digits.linear_group().any(|group| group.len() == 2)
 }
 
