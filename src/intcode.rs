@@ -7,6 +7,8 @@ pub mod vm;
 #[cfg(test)]
 mod test;
 
+pub use vm::Input as _;
+pub use vm::Output as _;
 pub use vm::{DefaultInput, DefaultOutput, Machine};
 
 use std::str::FromStr;

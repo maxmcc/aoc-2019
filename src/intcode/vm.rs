@@ -1,6 +1,6 @@
-use super::mem::{self, Memory};
+use super::mem::Memory;
 use super::op::Instruction;
-use super::Program;
+use crate::intcode::*;
 
 use std::collections::VecDeque;
 
