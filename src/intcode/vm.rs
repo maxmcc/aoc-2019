@@ -84,7 +84,7 @@ where
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum InsPtrUpdate {
     Jump(mem::Address),
-    Advance(usize),
+    Advance(mem::Offset),
 }
 
 impl<I: Input, O: Output> Machine<I, O> {
@@ -126,7 +126,7 @@ impl<I: Input, O: Output> Machine<I, O> {
             }
             Instruction::SetRelBase(load_addr) => {
                 let addr = self.memory.load(load_addr);
-                self.memory.rel_base += addr.0;
+                self.memory.rel_base += mem::Offset::from(addr);
                 InsPtrUpdate::Advance(instruction.opcode().len())
             }
             Instruction::Halt => {
@@ -136,7 +136,7 @@ impl<I: Input, O: Output> Machine<I, O> {
         };
         match update {
             InsPtrUpdate::Jump(address) => self.ins_ptr = address,
-            InsPtrUpdate::Advance(amount) => self.ins_ptr += amount as isize,
+            InsPtrUpdate::Advance(amount) => self.ins_ptr += amount,
         }
         Status::Ready
     }

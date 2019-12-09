@@ -122,6 +122,7 @@ mod test_day05 {
 
 mod test_day09 {
     use crate::intcode::*;
+
     use radixal::IntoDigits;
 
     #[test]
@@ -133,12 +134,8 @@ mod test_day09 {
         let mut machine = Machine::default_io(&program);
         machine.run();
         assert_eq!(
-            dbg!(machine.output)
-                .buffer
-                .iter()
-                .map(|x| x.0)
-                .collect::<Vec<_>>(),
-            quine
+            machine.output.buffer,
+            quine.iter().map(Into::into).collect::<Vec<mem::Value>>()
         );
     }
 

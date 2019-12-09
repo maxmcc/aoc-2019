@@ -108,13 +108,13 @@ pub enum Opcode {
 }
 
 impl Opcode {
-    pub fn len(&self) -> usize {
+    pub fn len(&self) -> mem::Offset {
         match self {
-            Opcode::Add | Opcode::Multiply | Opcode::LessThan | Opcode::Equals => 4,
-            Opcode::JumpIfTrue | Opcode::JumpIfFalse => 3,
-            Opcode::Input | Opcode::Output => 2,
-            Opcode::SetRelBase => 2,
-            Opcode::Halt => 1,
+            Opcode::Add | Opcode::Multiply | Opcode::LessThan | Opcode::Equals => 4.into(),
+            Opcode::JumpIfTrue | Opcode::JumpIfFalse => 3.into(),
+            Opcode::Input | Opcode::Output => 2.into(),
+            Opcode::SetRelBase => 2.into(),
+            Opcode::Halt => 1.into(),
         }
     }
 

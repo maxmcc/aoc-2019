@@ -1,5 +1,6 @@
 use super::{op, Program};
 
+use std::convert::TryInto;
 use std::iter;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -52,19 +53,6 @@ pub struct Address(pub usize);
 pub const NOUN_ADDRESS: Address = Address(1);
 pub const VERB_ADDRESS: Address = Address(2);
 
-impl std::ops::Add<isize> for Address {
-    type Output = Address;
-    fn add(self, other: isize) -> Address {
-        Address((self.0 as isize + other) as usize)
-    }
-}
-
-impl std::ops::AddAssign<isize> for Address {
-    fn add_assign(&mut self, other: isize) {
-        *self = *self + other;
-    }
-}
-
 impl From<usize> for Address {
     fn from(u: usize) -> Self {
         Address(u)
@@ -77,10 +65,52 @@ impl From<Value> for Address {
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct Offset(pub isize);
+
+impl From<isize> for Offset {
+    fn from(i: isize) -> Self {
+        Offset(i)
+    }
+}
+
+impl From<Value> for Offset {
+    fn from(value: Value) -> Self {
+        Offset(value.0)
+    }
+}
+
+impl std::ops::Add for Offset {
+    type Output = Self;
+    fn add(self, other: Self) -> Self::Output {
+        Offset(self.0 + other.0)
+    }
+}
+
+impl std::ops::AddAssign for Offset {
+    fn add_assign(&mut self, other: Self) {
+        *self = *self + other
+    }
+}
+
+impl std::ops::Add<Offset> for Address {
+    type Output = Address;
+    fn add(self, offset: Offset) -> Self::Output {
+        let i: isize = self.0.try_into().unwrap();
+        Address((i + offset.0).try_into().unwrap())
+    }
+}
+
+impl std::ops::AddAssign<Offset> for Address {
+    fn add_assign(&mut self, offset: Offset) {
+        *self = *self + offset;
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Memory {
-    pub values: Vec<Value>,
-    pub rel_base: isize,
+    values: Vec<Value>,
+    pub rel_base: Offset,
 }
 
 impl Memory {
@@ -108,15 +138,10 @@ impl Memory {
 
 impl From<&Program> for Memory {
     fn from(program: &Program) -> Self {
-        let values = program
-            .0
-            .iter()
-            .copied()
-            .chain(iter::repeat(0.into()).take(16384))
-            .collect();
+        let values = program.0.clone();
         Memory {
             values: values,
-            rel_base: 0,
+            rel_base: 0.into(),
         }
     }
 }
@@ -127,14 +152,10 @@ where
     T: Into<Value>,
 {
     fn from(slice: S) -> Self {
-        let values = slice
-            .into_iter()
-            .map(Into::into)
-            .chain(iter::repeat(0.into()).take(16394))
-            .collect();
+        let values = slice.into_iter().map(Into::into).collect();
         Memory {
             values: values,
-            rel_base: 0,
+            rel_base: 0.into(),
         }
     }
 }
@@ -142,12 +163,23 @@ where
 impl std::ops::Index<Address> for Memory {
     type Output = Value;
     fn index(&self, addr: Address) -> &Self::Output {
-        &self.values[addr.0]
+        if addr.0 < self.values.len() {
+            &self.values[addr.0]
+        } else {
+            &Value(0)
+        }
     }
 }
 
 impl std::ops::IndexMut<Address> for Memory {
     fn index_mut(&mut self, addr: Address) -> &mut Self::Output {
-        &mut self.values[addr.0]
+        if addr.0 < self.values.len() {
+            &mut self.values[addr.0]
+        } else {
+            let additional = addr.0 - self.values.len();
+            self.values.reserve(additional);
+            self.values.extend(iter::repeat(Value(0)).take(additional));
+            &mut self.values[addr.0]
+        }
     }
 }
