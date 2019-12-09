@@ -96,8 +96,8 @@ impl std::ops::AddAssign for Offset {
 impl std::ops::Add<Offset> for Address {
     type Output = Address;
     fn add(self, offset: Offset) -> Self::Output {
-        let i: isize = self.0.try_into().unwrap();
-        Address((i + offset.0).try_into().unwrap())
+        let i = self.0 as isize;
+        Address((i + offset.0) as usize)
     }
 }
 
@@ -176,7 +176,7 @@ impl std::ops::IndexMut<Address> for Memory {
         if addr.0 < self.values.len() {
             &mut self.values[addr.0]
         } else {
-            let additional = addr.0 - self.values.len();
+            let additional = addr.0 - self.values.len() + 1;
             self.values.reserve(additional);
             self.values.extend(iter::repeat(Value(0)).take(additional));
             &mut self.values[addr.0]
