@@ -126,6 +126,14 @@ mod test_day09 {
     use radixal::IntoDigits;
 
     #[test]
+    fn test_set_rel_base() {
+        let program = Program::from(&[109, 42, 99]);
+        let mut machine = Machine::default_io(&program);
+        machine.run();
+        assert_eq!(machine.memory.rel_base, 42.into());
+    }
+
+    #[test]
     fn test_quine() {
         let quine = &[
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
