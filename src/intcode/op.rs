@@ -10,6 +10,7 @@ pub enum Instruction {
     CondJump(Opcode, Load, Load),
     Input(Store),
     Output(Load),
+    SetRelBase(Load),
     Halt,
 }
 
@@ -20,6 +21,7 @@ impl Instruction {
             Instruction::CondJump(opcode, ..) => *opcode,
             Instruction::Input(..) => Opcode::Input,
             Instruction::Output(..) => Opcode::Output,
+            Instruction::SetRelBase(..) => Opcode::SetRelBase,
             Instruction::Halt => Opcode::Halt,
         }
     }
@@ -52,6 +54,7 @@ where
             ),
             Opcode::Input => Instruction::Input(parameters.next().unwrap().into()),
             Opcode::Output => Instruction::Output(parameters.next().unwrap().into()),
+            Opcode::SetRelBase => Instruction::SetRelBase(parameters.next().unwrap().into()),
             Opcode::Halt => Instruction::Halt,
         }
     }
@@ -61,6 +64,7 @@ where
 pub enum Load {
     Position(mem::Address),
     Immediate(mem::Value),
+    Relative(mem::Address),
 }
 
 impl From<(ParameterMode, mem::Value)> for Load {
@@ -68,18 +72,23 @@ impl From<(ParameterMode, mem::Value)> for Load {
         match mode {
             ParameterMode::Position => Load::Position(value.into()),
             ParameterMode::Immediate => Load::Immediate(value),
+            ParameterMode::Relative => Load::Relative(value.into()),
         }
     }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct Store(pub mem::Address);
+pub enum Store {
+    Position(mem::Address),
+    Relative(mem::Address),
+}
 
 impl From<(ParameterMode, mem::Value)> for Store {
     fn from((mode, value): (ParameterMode, mem::Value)) -> Self {
         match mode {
-            ParameterMode::Position => Store(value.into()),
+            ParameterMode::Position => Store::Position(value.into()),
             ParameterMode::Immediate => panic!("cannot create store in immediate mode"),
+            ParameterMode::Relative => Store::Relative(value.into()),
         }
     }
 }
@@ -94,6 +103,7 @@ pub enum Opcode {
     JumpIfFalse = 6,
     LessThan = 7,
     Equals = 8,
+    SetRelBase = 9,
     Halt = 99,
 }
 
@@ -103,6 +113,7 @@ impl Opcode {
             Opcode::Add | Opcode::Multiply | Opcode::LessThan | Opcode::Equals => 4,
             Opcode::JumpIfTrue | Opcode::JumpIfFalse => 3,
             Opcode::Input | Opcode::Output => 2,
+            Opcode::SetRelBase => 2,
             Opcode::Halt => 1,
         }
     }
@@ -130,6 +141,7 @@ impl Opcode {
 pub enum ParameterMode {
     Position = 0,
     Immediate = 1,
+    Relative = 2,
 }
 
 impl mem::Value {
@@ -172,6 +184,7 @@ mod test {
     fn test_parameter_modes_from_value() {
         let position = ParameterMode::Position;
         let immediate = ParameterMode::Immediate;
+        let relative = ParameterMode::Relative;
         fn modes(value: isize, len: usize) -> Vec<ParameterMode> {
             mem::Value(value).parameter_modes().take(len).collect()
         }
@@ -181,6 +194,9 @@ mod test {
         assert_eq!(modes(1101, 3), [immediate, immediate, position]);
         assert_eq!(modes(11101, 3), [immediate, immediate, immediate]);
         assert_eq!(modes(10101, 3), [immediate, position, immediate]);
+
+        assert_eq!(modes(20101, 3), [immediate, position, relative]);
+        assert_eq!(modes(203, 1), [relative]);
     }
 
     #[test]
@@ -191,7 +207,7 @@ mod test {
                 Opcode::Add,
                 Load::Immediate(2.into()),
                 Load::Immediate(6.into()),
-                Store(3.into())
+                Store::Position(3.into())
             )
         );
         assert_eq!(
@@ -200,7 +216,7 @@ mod test {
                 Opcode::Multiply,
                 Load::Position(4.into()),
                 Load::Immediate(3.into()),
-                Store(4.into())
+                Store::Position(4.into())
             )
         );
         assert_eq!(
@@ -209,7 +225,7 @@ mod test {
                 Opcode::LessThan,
                 Load::Immediate((-4).into()),
                 Load::Position(3.into()),
-                Store(12.into())
+                Store::Position(12.into())
             )
         );
         assert_eq!(
@@ -218,7 +234,7 @@ mod test {
                 Opcode::Equals,
                 Load::Position(2.into()),
                 Load::Position(2.into()),
-                Store(9.into())
+                Store::Position(9.into())
             )
         );
     }
@@ -247,11 +263,23 @@ mod test {
     fn test_io_instruction_from_memory() {
         assert_eq!(
             Instruction::from(&[3, 1, 3, 3, 4]),
-            Instruction::Input(Store(1.into()))
+            Instruction::Input(Store::Position(1.into()))
         );
         assert_eq!(
             Instruction::from(&[4, 1]),
             Instruction::Output(Load::Position(1.into()))
+        );
+        assert_eq!(
+            Instruction::from(&[203, 0]),
+            Instruction::Input(Store::Relative(0.into()))
+        );
+    }
+
+    #[test]
+    fn test_set_rel_base_instruction_from_memory() {
+        assert_eq!(
+            Instruction::from(&[109, 6]),
+            Instruction::SetRelBase(Load::Immediate(6.into()))
         );
     }
 

@@ -1,5 +1,7 @@
 use super::{op, Program};
 
+use std::iter;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Value(pub isize);
 
@@ -50,9 +52,16 @@ pub struct Address(pub usize);
 pub const NOUN_ADDRESS: Address = Address(1);
 pub const VERB_ADDRESS: Address = Address(2);
 
-impl Address {
-    pub fn advance(&mut self, amount: usize) {
-        self.0 += amount
+impl std::ops::Add<isize> for Address {
+    type Output = Address;
+    fn add(self, other: isize) -> Address {
+        Address((self.0 as isize + other) as usize)
+    }
+}
+
+impl std::ops::AddAssign<isize> for Address {
+    fn add_assign(&mut self, other: isize) {
+        *self = *self + other;
     }
 }
 
@@ -69,17 +78,22 @@ impl From<Value> for Address {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Memory(Vec<Value>);
+pub struct Memory {
+    pub values: Vec<Value>,
+    pub rel_base: isize,
+}
 
 impl Memory {
     pub fn read_instruction(&self, start: Address) -> op::Instruction {
-        let mem_slice = &self.0[start.0..];
+        let mem_slice = &self.values[start.0..];
         mem_slice.into()
     }
 
     pub fn store(&mut self, value: Value, store: op::Store) {
+        let base = self.rel_base;
         match store {
-            op::Store(address) => self[address] = value,
+            op::Store::Position(address) => self[address] = value,
+            op::Store::Relative(address) => self[address + base] = value,
         }
     }
 
@@ -87,13 +101,23 @@ impl Memory {
         match load {
             op::Load::Position(address) => self[address],
             op::Load::Immediate(value) => value,
+            op::Load::Relative(address) => self[address + self.rel_base],
         }
     }
 }
 
 impl From<&Program> for Memory {
     fn from(program: &Program) -> Self {
-        Memory(program.0.clone())
+        let values = program
+            .0
+            .iter()
+            .copied()
+            .chain(iter::repeat(0.into()).take(16384))
+            .collect();
+        Memory {
+            values: values,
+            rel_base: 0,
+        }
     }
 }
 
@@ -103,19 +127,27 @@ where
     T: Into<Value>,
 {
     fn from(slice: S) -> Self {
-        Memory(slice.into_iter().map(Into::into).collect())
+        let values = slice
+            .into_iter()
+            .map(Into::into)
+            .chain(iter::repeat(0.into()).take(16394))
+            .collect();
+        Memory {
+            values: values,
+            rel_base: 0,
+        }
     }
 }
 
 impl std::ops::Index<Address> for Memory {
     type Output = Value;
     fn index(&self, addr: Address) -> &Self::Output {
-        &self.0[addr.0]
+        &self.values[addr.0]
     }
 }
 
 impl std::ops::IndexMut<Address> for Memory {
     fn index_mut(&mut self, addr: Address) -> &mut Self::Output {
-        &mut self.0[addr.0]
+        &mut self.values[addr.0]
     }
 }

@@ -124,6 +124,11 @@ impl<I: Input, O: Output> Machine<I, O> {
                 self.output.write_output(output);
                 InsPtrUpdate::Advance(instruction.opcode().len())
             }
+            Instruction::SetRelBase(load_addr) => {
+                let addr = self.memory.load(load_addr);
+                self.memory.rel_base += addr.0;
+                InsPtrUpdate::Advance(instruction.opcode().len())
+            }
             Instruction::Halt => {
                 self.status = Status::Halted;
                 return self.status;
@@ -131,7 +136,7 @@ impl<I: Input, O: Output> Machine<I, O> {
         };
         match update {
             InsPtrUpdate::Jump(address) => self.ins_ptr = address,
-            InsPtrUpdate::Advance(amount) => self.ins_ptr.advance(amount),
+            InsPtrUpdate::Advance(amount) => self.ins_ptr += amount as isize,
         }
         Status::Ready
     }

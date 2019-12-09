@@ -119,3 +119,44 @@ mod test_day05 {
         machine_io_test(&program, expected);
     }
 }
+
+mod test_day09 {
+    use crate::intcode::*;
+    use radixal::IntoDigits;
+
+    #[test]
+    fn test_quine() {
+        let quine = &[
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+        let program = Program::from(quine);
+        let mut machine = Machine::default_io(&program);
+        machine.run();
+        assert_eq!(
+            dbg!(machine.output)
+                .buffer
+                .iter()
+                .map(|x| x.0)
+                .collect::<Vec<_>>(),
+            quine
+        );
+    }
+
+    #[test]
+    fn test_16_digit_num() {
+        let program = Program::from(&[1102, 34915192, 34915192, 7, 4, 7, 99, 0]);
+        let mut machine = Machine::default_io(&program);
+        machine.run();
+        let output = machine.output.buffer;
+        let value = output[0].0 as usize;
+        assert_eq!(value.into_decimal_digits().count(), 16);
+    }
+
+    #[test]
+    fn test_middle_num() {
+        let program = Program::from(&[104, 1125899906842624, 99]);
+        let mut machine = Machine::default_io(&program);
+        machine.run();
+        assert_eq!(machine.output.buffer[0], 1125899906842624.into());
+    }
+}
