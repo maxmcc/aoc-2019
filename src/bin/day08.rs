@@ -14,9 +14,9 @@ fn main() {
 }
 
 fn part1(input: &[u32]) {
-    let mut min_freqs = vec![std::usize::MAX; 3];
+    let mut min_freqs = [std::usize::MAX; 3];
     'chunks: for chunk in input.chunks(LAYER_SIZE) {
-        let mut freqs = vec![0; 3];
+        let mut freqs = [0; 3];
         for x in chunk {
             freqs[*x as usize] += 1;
             if freqs[0] >= min_freqs[0] {
