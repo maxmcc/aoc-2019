@@ -1,6 +1,5 @@
 use super::{op, Program};
 
-use std::convert::TryInto;
 use std::iter;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]

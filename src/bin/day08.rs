@@ -1,54 +1,51 @@
-use std::collections::HashMap;
+const COLS: usize = 25;
+const ROWS: usize = 6;
+const LAYER_SIZE: usize = COLS * ROWS;
 
 fn main() {
-    main1();
-    main2();
+    let input = include_str!("../../input/day08.in");
+    let nums = input
+        .trim()
+        .chars()
+        .filter_map(|c| c.to_digit(10))
+        .collect::<Vec<_>>();
+    part1(&nums);
+    part2(&nums);
 }
 
-fn main1() {
-    let input = include_str!("../../input/day08.in");
-    let layer_size = 25 * 6;
-    let chars = input.trim().chars().collect::<Vec<_>>();
-    let layer = chars
-        .chunks(layer_size)
-        .map(|chunk| {
-            let mut map = HashMap::new();
-            for x in chunk {
-                *map.entry(x).or_insert(0) += 1;
+fn part1(input: &[u32]) {
+    let mut min_freqs = vec![std::usize::MAX; 3];
+    'chunks: for chunk in input.chunks(LAYER_SIZE) {
+        let mut freqs = vec![0; 3];
+        for x in chunk {
+            freqs[*x as usize] += 1;
+            if freqs[0] >= min_freqs[0] {
+                continue 'chunks;
             }
-            map
-        })
-        .min_by_key(|freq| freq[&'0'])
-        .unwrap();
-    println!("{}", layer[&'1'] * layer[&'2']);
+        }
+        min_freqs = freqs;
+    }
+    println!("{}", min_freqs[1] * min_freqs[2]);
 }
 
-fn main2() {
-    let input = include_str!("../../input/day08.in");
-    let rows = 6;
-    let cols = 25;
-    let layer_size = rows * cols; //25 * 6;
-    let mut image = vec!['2'; layer_size];
-    let chars = input.trim().chars().collect::<Vec<_>>();
-    for chunk in chars.chunks(layer_size) {
-        for (i, c) in (0..).zip(chunk) {
-            if image[i] == '2' {
+fn part2(input: &[u32]) {
+    let mut image = vec![2; LAYER_SIZE];
+    for chunk in input.chunks(LAYER_SIZE) {
+        for (i, c) in chunk.iter().enumerate() {
+            if image[i] == 2 {
                 image[i] = *c;
             }
         }
     }
-    let s = image
-        .chunks(cols)
-        .map(|s| {
-            s.iter()
-                .map(|c| match c {
-                    '1' => ' ',
-                    '0' => '*',
-                    _ => *c,
-                })
-                .collect::<String>()
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-    println!("{}", s);
+    for row in image.chunks(COLS) {
+        let row = row
+            .iter()
+            .map(|c| match c {
+                0 => ' ', // white
+                1 => '*', // black
+                _ => unreachable!(),
+            })
+            .collect::<String>();
+        println!("{}", row);
+    }
 }
