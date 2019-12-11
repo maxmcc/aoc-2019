@@ -1,43 +1,64 @@
-use itertools::Itertools;
 use num::Integer;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::str::FromStr;
 
 fn main() {
     let input = include_str!("../../input/day10.in");
-    let asteroids = parse_input(&input);
+    let asteroids = input.parse::<Asteroids>().unwrap();
     part1(&asteroids);
 }
 
-fn parse_input(input: &str) -> Vec<Point> {
-    input
-        .trim()
-        .lines()
-        .enumerate()
-        .flat_map(|(y, row)| {
-            row.trim().chars().enumerate().filter_map(move |(x, item)| {
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct Asteroids(Vec<Point>);
+
+impl FromStr for Asteroids {
+    type Err = !;
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let mut points = vec![];
+        for (y, row) in string.trim().lines().enumerate() {
+            for (x, item) in row.trim().chars().enumerate() {
                 if item == '#' {
-                    Some(Point(x, y))
-                } else if item == '.' {
-                    None
-                } else {
-                    panic!("unexpected character {:#?}", item)
+                    points.push(Point(x, y));
                 }
-            })
-        })
-        .collect()
+            }
+        }
+        Ok(Asteroids(points))
+    }
 }
 
-fn part1(asteroids: &[Point]) {
-    let best = best_point(&asteroids);
-    println!("{}", best.1);
+impl Asteroids {
+    fn visible_points(&self, from: &Point) -> HashMap<Slope, Vec<Point>> {
+        let mut points_by_slope = HashMap::new();
+        for point in &self.0 {
+            if point == from {
+                continue;
+            }
+            let slope = from.slope_to(&point);
+            let entry = points_by_slope.entry(slope).or_insert(Vec::new());
+            entry.push(*point);
+        }
+        for (_slope, points) in &mut points_by_slope {
+            points.sort_unstable_by(|p1, p2| {
+                let d1 = from.distance_to(p1);
+                let d2 = from.distance_to(p2);
+                d1.partial_cmp(&d2).unwrap()
+            });
+        }
+        points_by_slope
+    }
+
+    fn most_visible_point(&self) -> (Point, usize) {
+        self.0
+            .iter()
+            .map(|point| (*point, self.visible_points(point).len()))
+            .max_by_key(|(_point, visible)| *visible)
+            .unwrap()
+    }
 }
 
-fn best_point(asteroids: &[Point]) -> (Point, usize) {
-    asteroids
-        .iter()
-        .map(|point| (*point, point.visible_points(asteroids).len()))
-        .max_by_key(|(_, visible)| *visible)
-        .unwrap()
+fn part1(asteroids: &Asteroids) {
+    let (point, visible) = asteroids.most_visible_point();
+    println!("{} from {:?}", visible, point);
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -56,36 +77,6 @@ impl Point {
         let dx = x1 as f64 - x0 as f64;
         dy.hypot(dx)
     }
-
-    fn visible_points<'a, I>(&self, points: I) -> HashSet<Point>
-    where
-        I: IntoIterator<Item = &'a Point>,
-    {
-        dbg!(self.group_by_slope(points))
-            .values()
-            .map(|x| x.first().unwrap())
-            .copied()
-            .collect()
-    }
-
-    fn group_by_slope<'a, I>(&self, points: I) -> HashMap<Slope, Vec<Point>>
-    where
-        I: IntoIterator<Item = &'a Point>,
-    {
-        let mut grouped = points
-            .into_iter()
-            .filter(|point| *point != self)
-            .map(|point| (self.slope_to(point), *point))
-            .into_group_map();
-        for collinear_points in grouped.values_mut() {
-            collinear_points.sort_unstable_by(|lhs, rhs| {
-                self.distance_to(lhs)
-                    .partial_cmp(&self.distance_to(rhs))
-                    .unwrap()
-            });
-        }
-        grouped
-    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -93,40 +84,14 @@ struct Slope(isize, isize);
 
 impl Slope {
     fn new(dy: isize, dx: isize) -> Self {
-        let mut slope = Slope(dy, dx);
-        slope.reduce();
-        assert!(slope.1 >= 0);
-        slope
-    }
-
-    fn reduce(&mut self) {
-        let divisor = self.0.gcd(&self.1);
-        self.0 /= divisor;
-        self.1 /= divisor;
-        if self.1 < 0 {
-            self.0 = 0 - self.0;
-            self.1 = 0 - self.1;
-        }
+        let divisor = dy.gcd(&dx);
+        Slope(dy / divisor, dx / divisor)
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn test_group_by_slope() {
-        let points = &[
-            Point(0, 0),
-            Point(1, 1),
-            Point(2, 2),
-            Point(5, 0),
-            Point(6, 0),
-        ];
-        let groups = Point(0, 0).group_by_slope(points);
-        assert_eq!(groups[&Slope::new(1, 1)], vec![Point(1, 1), Point(2, 2)]);
-        assert_eq!(groups[&Slope::new(0, 1)], vec![Point(5, 0), Point(6, 0)]);
-    }
 
     #[test]
     fn test_best_point() {
@@ -137,9 +102,8 @@ mod test {
             #...#
             #####
             "#;
-        let asteroids = parse_input(&input);
-        assert_eq!(asteroids.len(), 17);
-        assert_eq!(best_point(&asteroids), (Point(2, 2), 16));
+        let asteroids = input.parse::<Asteroids>().unwrap();
+        assert_eq!(asteroids.most_visible_point(), (Point(2, 2), 16));
 
         let input = r#"
             .#..#
@@ -148,9 +112,8 @@ mod test {
             ....#
             ...##
         "#;
-        let asteroids = parse_input(&input);
-        assert_eq!(asteroids.len(), 10);
-        assert_eq!(best_point(&asteroids), (Point(3, 4), 8));
+        let asteroids = input.parse::<Asteroids>().unwrap();
+        assert_eq!(asteroids.most_visible_point(), (Point(3, 4), 8));
 
         let input = r#"
             ......#.#.
@@ -164,9 +127,8 @@ mod test {
             ##...#..#.
             .#....####
         "#;
-        let asteroids = parse_input(&input);
-        assert_eq!(asteroids.len(), 40);
-        assert_eq!(best_point(&asteroids), (Point(5, 8), 33));
+        let asteroids = input.parse::<Asteroids>().unwrap();
+        assert_eq!(asteroids.most_visible_point(), (Point(5, 8), 33));
 
         let input = r#"
             #.#...#.#.
@@ -180,8 +142,8 @@ mod test {
             ......#...
             .####.###.
         "#;
-        let asteroids = parse_input(&input);
-        assert_eq!(best_point(&asteroids), (Point(1, 2), 35));
+        let asteroids = input.parse::<Asteroids>().unwrap();
+        assert_eq!(asteroids.most_visible_point(), (Point(1, 2), 35));
 
         let input = r#"
             .#..#..###
@@ -195,8 +157,8 @@ mod test {
             .##...##.#
             .....#.#..
         "#;
-        let asteroids = parse_input(&input);
-        assert_eq!(best_point(&asteroids), (Point(6, 3), 41));
+        let asteroids = input.parse::<Asteroids>().unwrap();
+        assert_eq!(asteroids.most_visible_point(), (Point(6, 3), 41));
 
         let input = r#"
             .#..##.###...#######
@@ -220,7 +182,7 @@ mod test {
             #.#.#.#####.####.###
             ###.##.####.##.#..##
         "#;
-        let asteroids = parse_input(&input);
-        assert_eq!(best_point(&asteroids), (Point(11, 13), 210));
+        let asteroids = input.parse::<Asteroids>().unwrap();
+        assert_eq!(asteroids.most_visible_point(), (Point(11, 13), 210));
     }
 }
