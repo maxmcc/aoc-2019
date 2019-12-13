@@ -61,6 +61,16 @@ fn part1(asteroids: &Asteroids) {
     println!("{} from {:?}", visible, point);
 }
 
+fn part2(asteroids: &Asteroids) {
+    let (point, _) = asteroids.most_visible_point();
+    let visible = asteroids.visible_points(&point);
+    let mut index = 0;
+    loop {
+        if index == 200 {}
+        index += 1;
+    }
+}
+
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 struct Point(usize, usize);
 
@@ -71,6 +81,7 @@ impl Point {
         let dx = x1 as isize - x0 as isize;
         Slope::new(dy, dx)
     }
+
     fn distance_to(&self, other: &Point) -> f64 {
         let (&Point(x0, y0), &Point(x1, y1)) = (self, other);
         let dy = y1 as f64 - y0 as f64;
